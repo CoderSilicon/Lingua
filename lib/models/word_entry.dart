@@ -49,12 +49,14 @@ class Meaning {
 class WordEntry {
   final String word;
   final String phonetic;
+  final String ipa;
   final String? audioUrl;
   final List<Meaning> meanings;
 
   WordEntry({
     required this.word,
     required this.phonetic,
+    this.ipa = '',
     this.audioUrl,
     required this.meanings,
   });
@@ -93,6 +95,7 @@ class WordEntry {
     return WordEntry(
       word: json['word'] as String? ?? '',
       phonetic: phonetic,
+      ipa: json['ipa'] as String? ?? '',
       audioUrl: audioUrl,
       meanings: meaningsList,
     );

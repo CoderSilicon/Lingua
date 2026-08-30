@@ -106,6 +106,9 @@ class DictionaryService {
         phonetic: (m['phon'] as String? ?? '').isNotEmpty
             ? '/${m['phon']}/'
             : '',
+        ipa: (m['ipa'] as String? ?? '').isNotEmpty
+            ? '[${m['ipa']}]'
+            : '',
         meanings: meanings,
       );
     } catch (_) {

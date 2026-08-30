@@ -28,54 +28,143 @@ void main() {
 
 /// Flat, borderless palette — no shadows, no outlines, like a classic
 /// file-manager UI. Everything is tinted blocks and typography.
-class K {
-  static const bg = Color(0xFFF4F3F0);
-  static const block = Color(0xFFECEBE7);
-  static const line = Color(0xFFDCdad3);
-  static const ink = Color(0xFF232527);
-  static const muted = Color(0xFF8A8B85);
-  static const accent = Color(0xFF5C6BC0);
-  static const accentSoft = Color(0xFFE9EBF7);
-  static const warn = Color(0xFFB57A2A);
-  static const warnSoft = Color(0xFFF7EEDE);
-  static const bad = Color(0xFFC0453A);
-  static const badSoft = Color(0xFFF6E7E4);
+class Palette {
+  const Palette({
+    required this.bg,
+    required this.block,
+    required this.line,
+    required this.ink,
+    required this.muted,
+    required this.accent,
+    required this.accentSoft,
+    required this.warn,
+    required this.warnSoft,
+    required this.bad,
+    required this.badSoft,
+  });
+
+  final Color bg;
+  final Color block;
+  final Color line;
+  final Color ink;
+  final Color muted;
+  final Color accent;
+  final Color accentSoft;
+  final Color warn;
+  final Color warnSoft;
+  final Color bad;
+  final Color badSoft;
 }
 
-ThemeData _theme() {
+const lightPalette = Palette(
+  bg: Color(0xFFF4F3F0),
+  block: Color(0xFFECEBE7),
+  line: Color(0xFFDCDAD3),
+  ink: Color(0xFF232527),
+  muted: Color(0xFF8A8B85),
+  accent: Color(0xFF5C6BC0),
+  accentSoft: Color(0xFFE9EBF7),
+  warn: Color(0xFFB57A2A),
+  warnSoft: Color(0xFFF7EEDE),
+  bad: Color(0xFFC0453A),
+  badSoft: Color(0xFFF6E7E4),
+);
+
+const darkPalette = Palette(
+  bg: Color(0xFF16181D),
+  block: Color(0xFF20242B),
+  line: Color(0xFF2E333C),
+  ink: Color(0xFFE7E9ED),
+  muted: Color(0xFF9AA0AB),
+  accent: Color(0xFF9FA8DA),
+  accentSoft: Color(0xFF2A3045),
+  warn: Color(0xFFD9A35A),
+  warnSoft: Color(0xFF3A2F1E),
+  bad: Color(0xFFE07A6E),
+  badSoft: Color(0xFF3D2422),
+);
+
+/// Current palette. Swaps between light and dark as the theme changes.
+class K {
+  K._();
+
+  static Palette p = lightPalette;
+
+  static bool get dark => identical(p, darkPalette);
+
+  static Color get bg => p.bg;
+  static Color get block => p.block;
+  static Color get line => p.line;
+  static Color get ink => p.ink;
+  static Color get muted => p.muted;
+  static Color get accent => p.accent;
+  static Color get accentSoft => p.accentSoft;
+  static Color get warn => p.warn;
+  static Color get warnSoft => p.warnSoft;
+  static Color get bad => p.bad;
+  static Color get badSoft => p.badSoft;
+}
+
+ThemeData _theme({required bool dark}) {
+  final palette = dark ? darkPalette : lightPalette;
   final scheme = ColorScheme.fromSeed(
-    seedColor: K.accent,
-    surface: K.bg,
+    seedColor: palette.accent,
+    brightness: dark ? Brightness.dark : Brightness.light,
+    surface: palette.bg,
   );
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor: K.bg,
+    scaffoldBackgroundColor: palette.bg,
     highlightColor: Colors.transparent,
     focusColor: Colors.transparent,
-    textTheme: const TextTheme(
-      bodyMedium: TextStyle(fontSize: 15, height: 1.45, color: K.ink),
-      titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: K.ink),
+    textTheme: TextTheme(
+      bodyMedium: TextStyle(fontSize: 15, height: 1.45, color: palette.ink),
+      titleLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: palette.ink,
+      ),
     ),
   );
 }
 
-class LinguaApp extends StatelessWidget {
+class LinguaApp extends StatefulWidget {
   const LinguaApp({super.key});
 
   @override
+  State<LinguaApp> createState() => _LinguaAppState();
+}
+
+class _LinguaAppState extends State<LinguaApp> {
+  late final ThemeData _themeLight = _theme(dark: false);
+  late final ThemeData _themeDark = _theme(dark: true);
+
+  bool _dark = false;
+
+  void _setDark(bool dark) {
+    setState(() => _dark = dark);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    K.p = _dark ? darkPalette : lightPalette;
     return MaterialApp(
       title: 'Lingua',
       debugShowCheckedModeBanner: false,
-      theme: _theme(),
-      home: const HomeScreen(),
+      theme: _themeLight,
+      darkTheme: _themeDark,
+      themeMode: _dark ? ThemeMode.dark : ThemeMode.light,
+      home: HomeScreen(dark: _dark, onToggleDark: _setDark),
     );
   }
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.dark, required this.onToggleDark});
+
+  final bool dark;
+  final void Function(bool dark) onToggleDark;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -83,8 +172,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const List<String> _popular = [
-    'wander', 'whisper', 'breeze', 'glimpse', 'wonder', 'resilient',
-    'ephemeral', 'brave', 'echo', 'journey',
+    'wander',
+    'whisper',
+    'breeze',
+    'glimpse',
+    'wonder',
+    'resilient',
+    'ephemeral',
+    'brave',
+    'echo',
+    'journey',
   ];
 
   final SpeechService _speech = SpeechService();
@@ -191,8 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     if (entry == null) {
-      final suggestions =
-          await _dictionary.suggest(clean, limit: 6);
+      final suggestions = await _dictionary.suggest(clean, limit: 6);
       if (!mounted || _searchedWord != clean) return;
       setState(() => _suggestions = suggestions);
     } else {
@@ -266,67 +362,91 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => _searchFocus.unfocus(),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Lingua',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        color: K.ink,
-                        letterSpacing: -0.5,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        statusBarIconBrightness: K.dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: K.dark ? Brightness.dark : Brightness.light,
+        systemNavigationBarIconBrightness: K.dark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      child: Scaffold(
+        body: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => _searchFocus.unfocus(),
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Lingua',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: K.ink,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '.',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        color: K.accent,
+                      Text(
+                        '.',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: K.accent,
+                        ),
                       ),
-                    ),
-                  ],
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => widget.onToggleDark(!K.dark),
+                        icon: Icon(
+                          K.dark
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                          color: K.muted,
+                          size: 22,
+                        ),
+                        tooltip: K.dark ? 'Use light mode' : 'Use dark mode',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
-                child: Text(
-                  'Speak or type a word — understand it instantly.',
-                  style: const TextStyle(fontSize: 14, color: K.muted),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+                  child: Text(
+                    'Speak or type a word — understand it instantly.',
+                    style: TextStyle(fontSize: 14, color: K.muted),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: _buildSearchBar(),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: _buildTransient(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: _buildSearchBar(),
                 ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scroll,
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-                  child: _buildBody(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: _buildTransient(),
+                  ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _scroll,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                    child: _buildBody(),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -343,19 +463,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, size: 22, color: K.muted),
+          Icon(Icons.search_rounded, size: 22, color: K.muted),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: _search,
               focusNode: _searchFocus,
-              style: const TextStyle(fontSize: 16, color: K.ink),
+              style: TextStyle(fontSize: 16, color: K.ink),
               cursorColor: K.accent,
               textCapitalization: TextCapitalization.sentences,
               textInputAction: TextInputAction.search,
               onChanged: _onSearchChanged,
               onSubmitted: _submit,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search a word…',
                 hintStyle: TextStyle(fontSize: 16, color: K.muted),
                 border: InputBorder.none,
@@ -372,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _search.clear();
                 setState(() => _suggestions = const []);
               },
-              icon: const Icon(Icons.close_rounded, size: 20, color: K.muted),
+              icon: Icon(Icons.close_rounded, size: 20, color: K.muted),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 40, height: 60),
               splashRadius: 18,
@@ -389,8 +509,9 @@ class _HomeScreenState extends State<HomeScreen> {
       color: _listening ? K.accent : K.ink,
       borderRadius: const BorderRadius.all(Radius.circular(14)),
       child: InkWell(
-        customBorder:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
         onTap: _listening ? null : _openVoice,
         child: SizedBox(
           width: 46,
@@ -439,7 +560,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       key: key,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         children: [
           Icon(icon, size: 18, color: fg),
@@ -447,7 +571,11 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: fg,
+              ),
             ),
           ),
         ],
@@ -503,14 +631,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.only(top: 48),
       child: Column(
-        children: const [
+        children: [
           SizedBox(
             width: 28,
             height: 28,
             child: CircularProgressIndicator(strokeWidth: 3, color: K.accent),
           ),
-          SizedBox(height: 14),
-          Text('Looking it up…', style: TextStyle(fontSize: 13.5, color: K.muted)),
+          const SizedBox(height: 14),
+          Text(
+            'Looking it up…',
+            style: TextStyle(fontSize: 13.5, color: K.muted),
+          ),
         ],
       ),
     );
@@ -526,8 +657,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           for (var i = 0; i < _suggestions.length; i++) ...[
-            if (i > 0)
-              const Divider(height: 1, thickness: 1, color: K.line),
+            if (i > 0) Divider(height: 1, thickness: 1, color: K.line),
             _buildSuggestionTile(_suggestions[i]),
           ],
         ],
@@ -542,15 +672,19 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            const Icon(Icons.north_west_rounded, size: 16, color: K.muted),
+            Icon(Icons.north_west_rounded, size: 16, color: K.muted),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 word,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: K.ink),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: K.ink,
+                ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: K.muted),
+            Icon(Icons.chevron_right_rounded, size: 18, color: K.muted),
           ],
         ),
       ),
@@ -569,15 +703,19 @@ class _HomeScreenState extends State<HomeScreen> {
               color: K.accentSoft,
               borderRadius: BorderRadius.circular(26),
             ),
-            child: const Icon(Icons.auto_stories_rounded, size: 40, color: K.accent),
+            child: Icon(Icons.auto_stories_rounded, size: 40, color: K.accent),
           ),
           const SizedBox(height: 22),
-          const Text(
+          Text(
             'Speak it or type it',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: K.ink),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: K.ink,
+            ),
           ),
           const SizedBox(height: 8),
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 28),
             child: Text(
               'Look up any English word by voice or text and read its meaning right here.',
@@ -608,7 +746,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             '52,000+ words · works offline · instant',
             style: TextStyle(fontSize: 12, color: K.muted),
           ),
@@ -622,7 +760,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.4,
@@ -640,10 +778,17 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: () => _submit(label),
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Text(
             label,
-            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: fg),
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
           ),
         ),
       ),
@@ -666,12 +811,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.search_off_rounded, size: 20, color: K.bad),
+                  Icon(Icons.search_off_rounded, size: 20, color: K.bad),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'No entry for “$word”',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: K.ink,
@@ -681,7 +826,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Check the spelling, or pick a word below.',
                 style: TextStyle(fontSize: 13.5, color: K.muted),
               ),
@@ -704,7 +849,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.mic_rounded, size: 17, color: K.muted),
+            Icon(Icons.mic_rounded, size: 17, color: K.muted),
             const SizedBox(width: 8),
             Text(
               'Or tap the mic and say the word again.',
@@ -745,7 +890,7 @@ class _ResultView extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     entry.word,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
                       color: K.ink,
@@ -758,10 +903,22 @@ class _ResultView extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 7),
                       child: Text(
                         entry.phonetic,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           color: K.accent,
+                        ),
+                      ),
+                    ),
+                  if (entry.ipa.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(
+                        'IPA ${entry.ipa}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                          color: K.muted,
                         ),
                       ),
                     ),
@@ -785,10 +942,11 @@ class _ResultView extends StatelessWidget {
       color: K.accentSoft,
       borderRadius: const BorderRadius.all(Radius.circular(20)),
       child: InkWell(
-        customBorder:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         onTap: onPressed,
-        child: const SizedBox(
+        child: SizedBox(
           width: 52,
           height: 52,
           child: Icon(Icons.volume_up_rounded, size: 24, color: K.accent),
@@ -810,7 +968,7 @@ class _ResultView extends StatelessWidget {
           children: [
             Text(
               meaning.partOfSpeech.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.3,
@@ -822,15 +980,19 @@ class _ResultView extends StatelessWidget {
               InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: () => onSpeak(text),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.all(6),
-                  child: Icon(Icons.volume_up_rounded, size: 17, color: K.muted),
+                  child: Icon(
+                    Icons.volume_up_rounded,
+                    size: 17,
+                    color: K.muted,
+                  ),
                 ),
               ),
           ],
         ),
         const SizedBox(height: 4),
-        const Divider(height: 1, thickness: 1, color: K.line),
+        Divider(height: 1, thickness: 1, color: K.line),
         const SizedBox(height: 2),
         for (var i = 0; i < meaning.definitions.length; i++)
           _buildDefinition(meaning.definitions[i], i + 1),
@@ -856,13 +1018,13 @@ class _ResultView extends StatelessWidget {
                 height: 20,
                 margin: const EdgeInsets.only(top: 2),
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: K.accentSoft,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   '$index',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                     color: K.accent,
@@ -873,11 +1035,7 @@ class _ResultView extends StatelessWidget {
               Expanded(
                 child: Text(
                   def.definition,
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    height: 1.5,
-                    color: K.ink,
-                  ),
+                  style: TextStyle(fontSize: 15.5, height: 1.5, color: K.ink),
                 ),
               ),
             ],
@@ -887,7 +1045,7 @@ class _ResultView extends StatelessWidget {
               padding: const EdgeInsets.only(left: 32, top: 6),
               child: Text(
                 '“${def.example}”',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13.5,
                   fontStyle: FontStyle.italic,
                   height: 1.4,
@@ -926,7 +1084,7 @@ class _ResultView extends StatelessWidget {
           ),
           child: Text(
             word,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: K.ink,
